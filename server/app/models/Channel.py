@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+import anyio
 import httpx
 from tortoise import fields, transactions
 from tortoise.exceptions import IntegrityError, OperationalError
@@ -15,7 +16,7 @@ from tortoise.models import Model as TortoiseModel
 
 from app import logging
 from app.config import Config
-from app.constants import HTTPX_CLIENT, JST
+from app.constants import HTTPX_CLIENT, JST, LOGO_DIR
 from app.utils import GetMirakurunAPIEndpointURL
 from app.utils.edcb import ChSet5Item
 from app.utils.edcb.CtrlCmdUtil import CtrlCmdUtil
@@ -624,6 +625,115 @@ class Channel(TortoiseModel):
 
         # 現在の番組情報、次の番組情報のタプルを返す
         return (program_present, program_following)
+
+
+    async def getBundledLogoFilePath(self) -> anyio.Path | None:
+        """
+        同梱されているロゴの中からチャンネルに対応するロゴファイルのパスを取得する
+
+        Returns:
+            anyio.Path | None: 同梱されているロゴファイルのパス (存在しない場合は None)
+        """
+
+        # 放送波から取得できるロゴはどっちみち画質が悪いし、取得できていないケースもありうる
+        # そのため、同梱されているロゴがあればそれを返すようにする
+        ## ロゴは NID32736-SID1024.png のようなファイル名の PNG ファイル (256x256) を想定
+        logo_dir = anyio.Path(str(LOGO_DIR))
+        if await (logo_dir /f'{self.id}.png').exists():
+            return logo_dir / f'{self.id}.png'
+
+        # ***** ロゴが全国共通なので、チャンネル名の前方一致で決め打ち *****
+
+        # NHK総合
+        if self.type == 'GR' and self.name.startswith('NHK総合'):
+            return logo_dir / 'NID32736-SID1024.png'
+
+        # NHKEテレ
+        if self.type == 'GR' and self.name.startswith('NHKEテレ'):
+            return logo_dir / 'NID32737-SID1032.png'
+
+        # 複数の地域で放送しているケーブルテレビの場合、コミュニティチャンネル (自主放送) の NID と SID は地域ごとに異なる
+        # さらにコミュニティチャンネルの NID-SID は CATV 間で稀に重複していることがあるため、チャンネル名から決め打ちで判定する
+        ## ref: https://youzaka.hatenablog.com/entry/2013/06/30/154243
+
+        # J:COMテレビ
+        if self.type == 'GR' and self.name.startswith('J:COMテレビ'):
+            return logo_dir / 'community-channels/J：COMテレビ.png'
+
+        # J:COMチャンネル
+        if self.type == 'GR' and self.name.startswith('J:COMチャンネル'):
+            return logo_dir / 'community-channels/J：COMチャンネル.png'
+
+        # イッツコムch10
+        if self.type == 'GR' and self.name.startswith('イッツコムch10'):
+            return logo_dir / 'community-channels/イッツコムch10.png'
+
+        # イッツコムch11
+        if self.type == 'GR' and self.name.startswith('イッツコムch11'):
+            return logo_dir / 'community-channels/イッツコムch11.png'
+
+        # スカパー！ナビ1
+        if self.type == 'GR' and self.name.startswith('スカパー！ナビ1'):
+            return logo_dir / 'community-channels/スカパー！ナビ1.png'
+
+        # スカパー！ナビ2
+        if self.type == 'GR' and self.name.startswith('スカパー！ナビ2'):
+            return logo_dir / 'community-channels/スカパー！ナビ2.png'
+
+        # eo光チャンネル
+        if self.type == 'GR' and self.name.startswith('eo光チャンネル'):
+            return logo_dir / 'community-channels/eo光チャンネル.png'
+
+        # ZTV
+        if self.type == 'GR' and self.name.startswith('ZTV'):
+            return logo_dir / 'community-channels/ZTV.png'
+
+        # BaycomCH
+        if self.type == 'GR' and self.name.startswith('BaycomCH'):
+            return logo_dir / 'community-channels/BaycomCH.png'
+
+        # ベイコム12CH
+        if self.type == 'GR' and self.name.startswith('ベイコム12CH'):
+            return logo_dir / 'community-channels/ベイコム12CH.png'
+
+        # スターデジオ
+        ## 本来は局ロゴは存在しないが、見栄えが悪いので 100 チャンネルすべてで同じ局ロゴを表示する
+        if self.type == 'SKY' and 400 <= self.service_id <= 499:
+            return logo_dir / 'NID1-SID400.png'
+
+        # ***** サブチャンネルのロゴを取得 *****
+
+        # 地デジでかつサブチャンネルのみ、メインチャンネルにロゴがあればそれを利用する
+        if self.type == 'GR' and self.is_subchannel is True:
+
+            # メインチャンネルの情報を取得
+            # ネットワーク ID が同じチャンネルのうち、一番サービス ID が若いチャンネルを探す
+            main_channel = await Channel.filter(network_id=self.network_id).order_by('service_id').first()
+
+            # メインチャンネルが存在し、ロゴも存在する
+            if main_channel is not None and await (logo_dir / f'{main_channel.id}.png').exists():
+                return logo_dir / f'{main_channel.id}.png'
+
+        # BS でかつサブチャンネルのみ、メインチャンネルにロゴがあればそれを利用する
+        if self.type == 'BS' and self.is_subchannel is True:
+
+            # メインチャンネルのサービス ID を算出
+            # NHKBS1 と NHKBSプレミアム だけ特別に、それ以外は一の位が1のサービス ID を算出
+            if self.service_id == 102:
+                main_service_id = 101
+            elif self.service_id == 104:
+                main_service_id = 103
+            else:
+                main_service_id = int(self.channel_number[0:2] + '1')
+
+            # メインチャンネルの情報を取得
+            main_channel = await Channel.filter(network_id=self.network_id, service_id=main_service_id).first()
+
+            # メインチャンネルが存在し、ロゴも存在する
+            if main_channel is not None and await (logo_dir / f'{main_channel.id}.png').exists():
+                return logo_dir / f'{main_channel.id}.png'
+
+        return None
 
 
     @classmethod

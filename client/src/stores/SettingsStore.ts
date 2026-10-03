@@ -84,6 +84,7 @@ export interface ILocalClientSettings extends IClientSettings {
     tv_panel_active_tab: 'Program' | 'Channel' | 'Comment' | 'Twitter';
     video_panel_active_tab: 'RecordedProgram' | 'Series' | 'Comment' | 'Twitter';
     video_watched_history_max_count: number;
+    discord_rich_presence: boolean;
     tv_streaming_quality: LiveStreamingQuality;
     tv_streaming_quality_cellular: LiveStreamingQuality;
     tv_data_saver_mode: boolean;
@@ -237,6 +238,10 @@ export const ILocalClientSettingsDefault: ILocalClientSettings = {
     // 視聴履歴の保持件数 (Default: 50件)
     // この値を超えると、最も古い視聴履歴から自動的に削除される
     video_watched_history_max_count: 50,
+    // Discord に視聴中の番組を表示する (Default: オフ)
+    // KonomiTV サーバーと同じ PC で起動している Discord の Rich Presence に表示される
+    // サーバー側で参照するため、設定のデバイス間同期がオンのときのみ有効
+    discord_rich_presence: false,
 
     // ***** 設定 → 画質 *****
 
@@ -395,6 +400,7 @@ export const SYNCABLE_SETTINGS_KEYS: (keyof IClientSettings)[] = [
     'tv_panel_active_tab',
     'video_panel_active_tab',
     'video_watched_history_max_count',
+    'discord_rich_presence',
     // tv_streaming_quality: 同期無効
     // tv_streaming_quality_cellular: 同期無効
     // tv_data_saver_mode: 同期無効
