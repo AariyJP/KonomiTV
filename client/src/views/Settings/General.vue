@@ -149,6 +149,16 @@
                     v-model.number="settingsStore.settings.video_watched_history_max_count">
                 </v-text-field>
             </div>
+            <div class="settings__item settings__item--switch">
+                <label class="settings__item-heading" for="discord_rich_presence">Discord に視聴中の番組を表示する</label>
+                <label class="settings__item-label" for="discord_rich_presence">
+                    オンにすると、テレビを視聴中の番組を Discord のアクティビティ (Rich Presence) に表示します。<br>
+                    KonomiTV サーバーと同じ PC で Discord が起動している必要があります。また、設定のデバイス間同期がオンのときだけ有効です。<br>
+                </label>
+                <v-switch class="settings__item-switch" color="primary" id="discord_rich_presence" hide-details
+                    v-model="settingsStore.settings.discord_rich_presence">
+                </v-switch>
+            </div>
             <v-divider class="mt-6"></v-divider>
             <div class="settings__item">
                 <div class="settings__item-heading">設定をエクスポート</div>

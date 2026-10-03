@@ -43,6 +43,7 @@ from app.routers import (
     VideoStreamsRouter,
 )
 from app.streams.LiveStream import LiveStream
+from app.utils.DiscordRichPresenceTask import DiscordRichPresenceTask
 from app.utils.edcb.EDCBTuner import EDCBTuner
 from app.utils.FastAPITaskUtil import repeat_every
 
@@ -221,6 +222,8 @@ tortoise.contrib.fastapi.register_tortoise(
 
 # サーバーの起動時に実行する
 recorded_scan_task: RecordedScanTask | None = None
+## 設定によるオン/オフはタスク内で随時判定するため、Discord Rich Presence タスクは常に生成・開始しておく
+discord_rich_presence_task = DiscordRichPresenceTask()
 @app.on_event('startup')
 async def Startup():
     global recorded_scan_task
@@ -248,6 +251,9 @@ async def Startup():
     # ref: https://docs.astral.sh/ruff/rules/asyncio-dangling-task/
     recorded_scan_task = RecordedScanTask()
     await recorded_scan_task.start()
+
+    # 視聴中の番組を Discord Rich Presence に反映するタスクを開始
+    await discord_rich_presence_task.start()
 
 # サーバー設定で指定された時間 (デフォルト: 15分) ごとに1回、チャンネル情報と番組情報を更新する
 # チャンネル情報は頻繁に変わるわけではないけど、手動で再起動しなくても自動で変更が適用されてほしい
@@ -293,6 +299,9 @@ async def Shutdown():
     if recorded_scan_task is not None:
         await recorded_scan_task.stop()
         recorded_scan_task = None
+
+    # Discord Rich Presence タスクを停止 (Discord 側のアクティビティも消去される)
+    await discord_rich_presence_task.stop()
 
     # 非同期タスクの終了処理が完全に終わるよう、もう少しだけ待つ
     # この待機を省略すると LiveEncodingTask などの終了前に Tortoise ORM の DB 接続が閉じられ、エラートレースバックが出力される

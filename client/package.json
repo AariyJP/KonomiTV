@@ -1,6 +1,6 @@
 {
     "name": "KonomiTV",
-    "version": "2026.10.4-AariyJP",
+    "version": "2026.10.3-AariyJP",
     "private": true,
     "scripts": {
         "akebi": "run-script-os",
@@ -25,7 +25,7 @@
         "comlink": "^4.4.1",
         "copy-image-clipboard": "^2.1.2",
         "dayjs": "^1.11.13",
-        "dplayer": "github:AariyJP/DPlayer#master",
+        "dplayer": "github:AariyJP/DPlayerF#main",
         "floating-vue": "^5.2.2",
         "hls.js": "^1.6.9",
         "idb": "^8.0.3",

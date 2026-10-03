@@ -15,11 +15,15 @@ from pydantic import BaseModel, PositiveInt
 
 
 # バージョン
-VERSION = '2026.10.4-AariyJP'
+VERSION = '2026.10.3-AariyJP'
 
 # 日本標準時 (JST, UTC+9) の ZoneInfo
 ## KonomiTV は日本向けのアプリケーションのため、日時は JST で統一して扱う
 JST = ZoneInfo('Asia/Tokyo')
+
+# Discord Rich Presence の送信元となる Discord アプリケーションの ID
+## Discord 上では「Watching (このアプリケーションの名前)」と表示され、その横にアプリケーションのアイコンが表示される
+DISCORD_CLIENT_ID = '835110950260572160'
 
 # ベースディレクトリ
 BASE_DIR = Path(__file__).resolve().parent.parent
