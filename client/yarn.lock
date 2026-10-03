@@ -2276,7 +2276,7 @@ doctrine@^3.0.0:
 
 "dplayer@github:AariyJP/DPlayer#master":
   version "2026.10.4-AariyJP"
-  resolved "https://codeload.github.com/AariyJP/DPlayer/tar.gz/1dea59df79fb71b293be4ca0611326ab0bea1687"
+  resolved "https://codeload.github.com/AariyJP/DPlayer/tar.gz/e5032db566f842f207a2b20db783d5f2a9e0d43f"
   dependencies:
     aribb24.js "~1.11.5"
     axios "^1.7.2"
